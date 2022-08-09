@@ -1,8 +1,8 @@
 # TwitterCommander
 Showcase the Twitter’s API v2 tweet capabilities
 
-![image](https://user-images.githubusercontent.com/9695930/183764648-412e3818-7416-492c-87ce-b14e615097ef.png)
-
+[![Twitter Commander](https://user-images.githubusercontent.com/9695930/183764648-412e3818-7416-492c-87ce-b14e615097ef.png)](https://youtu.be/QKtrfer5jwU "Twitter Commander functionalty")
+See functionality at [YouTube](https://youtu.be/QKtrfer5jwU)
 # Goals
 
 - visualize the way the API works (Expression -> Rule -> Stream)
