@@ -340,12 +340,7 @@ internal class Controller : INotifyPropertyChanged, IAsyncDisposable
         PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName));
     }
 
-    public async void Disconnect()
-    {
-        await DisposeAsync();
-    }
-
-    public async ValueTask DisposeAsync()
+    public async Task Disconnect()
     {
         IsConnected = false;
 
@@ -357,20 +352,25 @@ internal class Controller : INotifyPropertyChanged, IAsyncDisposable
         {
             // Not throwing
         }
+        
+        if (_tweetStream != null)
+        {
+            _client.CancelTweetStream(true);
+            await _tweetStream.WaitAsync(CancellationToken.None); // could take up to 20 sesonds (keep alive signal)
+            _tweetStream.Dispose();
+        }
 
+        IsConnected = null;
+    }
+
+    public async ValueTask DisposeAsync()
+    {
+        await Disconnect();
 
         if(_client != null)
         {
             _client.RateLimitChanged -= UpdateRateLimits;
             _client.Dispose();
         }
-
-        if (_tweetStream != null)
-        {
-            await _tweetStream.WaitAsync(CancellationToken.None); // could take up to 20 sesonds (keep alive signal)
-            _tweetStream.Dispose();
-        }
-
-        IsConnected = null;
     }
 }
