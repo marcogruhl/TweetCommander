@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 17
 VisualStudioVersion = 17.2.32630.192
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TwitterCommander", "TwitterCommander\TwitterCommander.csproj", "{D446BCFF-75E8-4D75-9241-5E3FEA6CD215}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "TweetCommander", "TweetCommander\TweetCommander.csproj", "{D446BCFF-75E8-4D75-9241-5E3FEA6CD215}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

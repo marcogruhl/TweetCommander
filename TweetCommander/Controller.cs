@@ -8,8 +8,8 @@ using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows;
-using TwitterCommander.Helper;
-using TwitterCommander.ViewModels;
+using TweetCommander.Helper;
+using TweetCommander.ViewModels;
 using TwitterSharp.Client;
 using TwitterSharp.Request.AdvancedSearch;
 using TwitterSharp.Request.Option;
@@ -17,7 +17,7 @@ using TwitterSharp.Response;
 using TwitterSharp.Response.RStream;
 using Expression = TwitterSharp.Rule.Expression;
 
-namespace TwitterCommander;
+namespace TweetCommander;
 
 internal class Controller : INotifyPropertyChanged, IAsyncDisposable
 {

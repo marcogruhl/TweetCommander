@@ -2,9 +2,9 @@
 using System.Windows.Controls;
 using System.Windows.Data;
 using System.Windows.Input;
-using TwitterCommander.ViewModels;
+using TweetCommander.ViewModels;
 
-namespace TwitterCommander
+namespace TweetCommander
 {
     /// <summary>
     /// Interaction logic for MainWindow.xaml

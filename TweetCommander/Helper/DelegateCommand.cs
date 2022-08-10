@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Windows.Input;
 
-namespace TwitterCommander.Helper;
+namespace TweetCommander.Helper;
 
 /// <summary>
 /// Generic implementation of <see cref="ICommand"/>.

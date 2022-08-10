@@ -3,7 +3,7 @@ using System.Globalization;
 using System.Windows;
 using System.Windows.Data;
 
-namespace TwitterCommander.Helper;
+namespace TweetCommander.Helper;
 
 public class EmptyStringToVisibilityConverter : IValueConverter
 {

@@ -3,11 +3,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
 using System.Windows.Data;
-using TwitterCommander.Helper;
+using TweetCommander.Helper;
 using TwitterSharp.Response.RStream;
 using TwitterSharp.Rule;
 
-namespace TwitterCommander.ViewModels;
+namespace TweetCommander.ViewModels;
 
 internal class MainWindowViewModel : BindableBaseLight
 {

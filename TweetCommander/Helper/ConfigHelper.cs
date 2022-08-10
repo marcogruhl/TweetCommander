@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Text.Json;
 using System.Text.Json.Serialization;
 
-namespace TwitterCommander.Helper;
+namespace TweetCommander.Helper;
 
 public static class ConfigHelper
 {

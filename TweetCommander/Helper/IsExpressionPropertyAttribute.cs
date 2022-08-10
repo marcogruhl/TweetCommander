@@ -1,7 +1,7 @@
 ﻿using System;
 using System.Linq;
 
-namespace TwitterCommander.Helper;
+namespace TweetCommander.Helper;
 
 [AttributeUsage(AttributeTargets.Property)]
 public class IsExpressionPropertyAttribute : Attribute

@@ -1,4 +1,4 @@
-﻿namespace TwitterCommander.Helper;
+﻿namespace TweetCommander.Helper;
 
 public enum AndOrEnum
 {

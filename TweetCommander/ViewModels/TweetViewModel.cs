@@ -1,6 +1,6 @@
 ﻿using TwitterSharp.Response.RTweet;
 
-namespace TwitterCommander.ViewModels
+namespace TweetCommander.ViewModels
 {
     internal class TweetViewModel
     {

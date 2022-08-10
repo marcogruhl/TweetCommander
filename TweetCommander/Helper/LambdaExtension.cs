@@ -2,7 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 
-namespace TwitterCommander.Helper;
+namespace TweetCommander.Helper;
 
 public class LambdaComparer<T> : IEqualityComparer<T>
 {

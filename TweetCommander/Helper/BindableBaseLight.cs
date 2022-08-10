@@ -2,7 +2,7 @@
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
 
-namespace TwitterCommander.Helper;
+namespace TweetCommander.Helper;
 
 internal class BindableBaseLight : INotifyPropertyChanged
 {

@@ -4,7 +4,7 @@ using System.Runtime.CompilerServices;
 using System.Timers;
 using TwitterSharp.Response;
 
-namespace TwitterCommander.ViewModels;
+namespace TweetCommander.ViewModels;
 
 /// <summary>
 /// https://developer.twitter.com/en/docs/twitter-api/rate-limits
