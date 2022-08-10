@@ -1,7 +1,7 @@
 # TweetCommander
 Showcase the Twitter’s API v2 tweet capabilities
 
-[![Twitter Commander](https://user-images.githubusercontent.com/9695930/183764648-412e3818-7416-492c-87ce-b14e615097ef.png)](https://youtu.be/QKtrfer5jwU "TweetCommander functionalty")
+[![Twitter Commander](https://user-images.githubusercontent.com/9695930/183889782-b91cb992-59b5-40ff-a0b2-6887f1793659.png)](https://youtu.be/QKtrfer5jwU "TweetCommander functionalty")
 See functionality at [YouTube](https://youtu.be/QKtrfer5jwU)
 # Goals
 
