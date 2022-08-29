@@ -2,10 +2,13 @@
 using System.Collections.Generic;
 using System.ComponentModel;
 using System.Linq;
+using System.Text.RegularExpressions;
+using System.Windows;
 using System.Windows.Data;
 using TweetCommander.Helper;
 using TwitterSharp.Response.RStream;
 using TwitterSharp.Rule;
+using Expression = TwitterSharp.Rule.Expression;
 
 namespace TweetCommander.ViewModels;
 
@@ -15,9 +18,10 @@ internal class MainWindowViewModel : BindableBaseLight
     public ListCollectionView RulesCollectionView { get; }
     public ListCollectionView RateLimitsCollectionView { get; }
     private Controller _controller { get; }
-    public DelegateCommand<StreamInfo> DeleteRuleCommand { get; set; }
-    public DelegateCommand GetRecentCommand { get; set; }
     public DelegateCommand AddRuleCommand { get; set; }
+    public DelegateCommand<StreamInfo> DeleteRuleCommand { get; set; }
+    public DelegateCommand<StreamInfo> LoadRuleCommand { get; set; }
+    public DelegateCommand GetRecentCommand { get; set; }
     public DelegateCommand StartStopStreamCommand { get; set; }
     public DelegateCommand ClearTweetsCommand { get; set; }
     public DelegateCommand GetTweetsByIdCommand { get; set; }
@@ -26,6 +30,7 @@ internal class MainWindowViewModel : BindableBaseLight
     public DelegateCommand HashtagAndOrCommand { get; set; }
     public DelegateCommand MentionAndOrCommand { get; set; }
     public DelegateCommand CashtagAndOrCommand { get; set; }
+    public DelegateCommand ResetExpressionCommand { get; set; }
 
 
     private string _bearerToken = ConfigHelper.GetValue(nameof(BearerToken), Environment.GetEnvironmentVariable("TWITTER_TOKEN"));
@@ -433,13 +438,15 @@ internal class MainWindowViewModel : BindableBaseLight
         TweetsCollectionView.SortDescriptions.Add(new SortDescription("Id", ListSortDirection.Descending));
         RulesCollectionView = new ListCollectionView(_controller.Rules);
         RateLimitsCollectionView = new ListCollectionView(_controller.RateLimits);
-        DeleteRuleCommand = new DelegateCommand<StreamInfo>(DeleteRuleAction, ButtonCanExecuteAction);
-        GetRecentCommand = new DelegateCommand(GetRecentAction, ButtonCanExecuteAction);
         AddRuleCommand = new DelegateCommand(AddRuleAction, ButtonCanExecuteAction);
+        DeleteRuleCommand = new DelegateCommand<StreamInfo>(DeleteRuleAction, ButtonCanExecuteAction);
+        LoadRuleCommand = new DelegateCommand<StreamInfo>(LoadRuleAction, ButtonCanExecuteAction);
+        GetRecentCommand = new DelegateCommand(GetRecentAction, ButtonCanExecuteAction);
         StartStopStreamCommand = new DelegateCommand(StartStopStreamAction, ButtonCanExecuteAction);
         ClearTweetsCommand = new DelegateCommand(ClearTweetsAction, ButtonCanExecuteAction);
         GetTweetsByIdCommand = new DelegateCommand(GetTweetsByIdAction, ButtonCanExecuteAction);
         GetTweetsFromUserCommand = new DelegateCommand(GetTweetsFromUserAction, ButtonCanExecuteAction);
+        ResetExpressionCommand = new DelegateCommand(ResetExpressionAction);
 
         CheckCanButtonsExecute();
 
@@ -451,6 +458,358 @@ internal class MainWindowViewModel : BindableBaseLight
         PropertyChanged += OnPropertyChanged;
 
         RefreshRule();
+    }
+
+    private void LoadRuleAction(StreamInfo obj)
+    {
+        // Group with different types
+        var t1 = "(\"Twitter API\" OR #v2) -\"recent search\""; 
+        var e1 = Expression.Keyword("Twitter API").Or(Expression.Hashtag("v2")).And(Expression.Keyword("recent search").Negate());
+        var s1 = e1.ToString().Substring(1, e1.ToString().Length - 2);
+        var q1 = s1.Equals(t1);
+
+
+
+        var x1_e = ToExpression(t1);
+        var x1_s = x1_e.ToString().Substring(1, x1_e.ToString().Length - 2);
+        var x1_q = x1_s.Equals(t1);
+
+
+
+        var t2 = "\"Twitter API\"";
+        var e2 = Expression.Keyword("Twitter API");
+        var s2 = e2.ToString();
+        var q2 = s2.Equals(t2);
+
+
+
+        // MultiLevelRule
+        var t3 = "((\"Twitter API\" OR #v2) -\"recent search\") OR ((grumpy cat) OR (#meme has:images -is:retweet))"; 
+        var e3 = Expression.Keyword("Twitter API").Or(Expression.Hashtag("v2")).And(Expression.Keyword("recent search").Negate());
+        var s3 = e1.ToString().Substring(1, e1.ToString().Length - 2);
+        var q3 = s1.Equals(t1);
+        
+        var x3_1 = Expression.Keyword("Twitter API");
+        var x3_2 = Expression.Hashtag("v2");
+        var x3_a = x3_1.Or(x3_2);
+        var x3_3 = Expression.Keyword("recent search");
+        var x3_3b = x3_3.Negate();
+        var x3_b = x3_a.And(x3_3b);
+        var x3_4 = Expression.Keyword("grumpy");
+        var x3_5 = Expression.Keyword("cat");
+        var x3_c = x3_4.And(x3_5);
+        var x3_6 = Expression.Hashtag("meme");
+        var x3_7 = Expression.HasImages();
+        var x3_8 = Expression.IsRetweet();
+        var x3_8b = x3_8.Negate();
+        var x3_d = x3_6.And(x3_7, x3_8b);
+        var x3_e = x3_c.Or(x3_d);
+        var x3_f = x3_b.Or(x3_e);
+
+        Expression ToExpression(string s)
+        {
+            // if(s[0] == '(' && s[s.Length -1] == ')')
+            //     s = s.Substring(1, s.Length - 2);
+
+            // Find Quote and Replace
+            // https://regex101.com/r/9P1hCA/1
+            var quotes = new List<string>();
+            var q = 0;
+
+            foreach (Match match in Regex.Matches(s, "(\\\").*?(\")"))
+            {
+                quotes.Add(match.Value);
+                s = s.ReplaceFirst(match.Value, $"{r}q{q++}{r}");
+            }
+
+            List<Expression> expressions = new List<Expression>();
+            var e = 0;
+            foreach (var stringExpression in s.Replace($" OR ", $" ").Replace($"(", $"").Replace($")", $"").Split(' '))
+            {
+                var isNegate = stringExpression.StartsWith('-');
+
+                var sr = isNegate ? stringExpression.Substring(1) : stringExpression;
+
+                // TODO: Optimize quote logic
+                if (stringExpression.Contains($"{r}q"))
+                    sr = quotes[Int32.Parse(Regex.Match(stringExpression, @"\d+").Value)].Replace("\"","");
+
+                if (sr.StartsWith('#'))
+                    AddExpression(Expression.Hashtag(sr.Substring(1)));
+                else if (sr.StartsWith('$'))
+                    AddExpression(Expression.Cashtag(sr.Substring(1)));
+                else if (sr.StartsWith('@'))
+                    AddExpression(Expression.Mention(sr.Substring(1)));
+                else if (sr.StartsWith("from:"))
+                    AddExpression(Expression.Author(sr.Replace("from:", "")));
+                else if (sr.StartsWith("to:"))
+                    AddExpression(Expression.Recipient(sr.Replace("to:", "")));
+                else if (sr.StartsWith("url:"))
+                    AddExpression(Expression.Url(sr.Replace("url:", "")));
+                else if (sr.StartsWith("retweets_of:"))
+                    AddExpression(Expression.Retweet(sr.Replace("retweets_of:", "")));
+                else if (sr.StartsWith("context:"))
+                    AddExpression(Expression.Context(sr.Replace("context:", "")));
+                else if (sr.StartsWith("entity:"))
+                    AddExpression(Expression.Entity(sr.Replace("entity:", "")));
+                else if (sr.StartsWith("conversation_id:"))
+                    AddExpression(Expression.ConversationId(sr.Replace("conversation_id:", "")));
+                else if (sr.StartsWith("bio:"))
+                    AddExpression(Expression.Bio(sr.Replace("bio:", "")));
+                else if (sr.StartsWith("bio_location:"))
+                    AddExpression(Expression.BioLocation(sr.Replace("bio_location:", "")));
+                else if (sr.StartsWith("place:"))
+                    AddExpression(Expression.Place(sr.Replace("place:", "")));
+                else if (sr.StartsWith("place_country:"))
+                    AddExpression(Expression.PlaceCountry(sr.Replace("place_country:", "")));
+                else if (sr.StartsWith("sample:"))
+                    AddExpression(Expression.Sample(Int32.Parse(sr.Replace("sample:", ""))));
+                else if (sr.StartsWith("lang:"))
+                    AddExpression(Expression.Lang(sr.Replace("lang:", "")));
+                else if (sr == "is:retweet")
+                    AddExpression(Expression.IsRetweet());
+                else if (sr == "is:reply")
+                    AddExpression(Expression.IsReply());
+                else if (sr == "is:quote")
+                    AddExpression(Expression.IsQuote());
+                else if (sr == "is:verified")
+                    AddExpression(Expression.IsVerified());
+                // TODO: FIX SPECIAL CASE
+                else if (sr == "is:nullcast")
+                    AddExpression(Expression.IsNotNullcast());
+                else if (sr == "has:hashtags")
+                    AddExpression(Expression.HasHashtags());
+                else if (sr == "has:cashtags")
+                    AddExpression(Expression.HasCashtags());
+                else if (sr == "has:links")
+                    AddExpression(Expression.HasLinks());
+                else if (sr == "has:mentions")
+                    AddExpression(Expression.HasMentions());
+                else if (sr == "has:media")
+                    AddExpression(Expression.HasMedia());
+                else if (sr == "has:images")
+                    AddExpression(Expression.HasImages());
+                else if (sr == "has:videos")
+                    AddExpression(Expression.HasVideos());
+                else if (sr == "has:geo")
+                    AddExpression(Expression.HasGeo());
+                else
+                    AddExpression(Expression.Keyword(sr));
+
+                void AddExpression(Expression exp)
+                {
+                    if (isNegate)
+                        expressions.Add(exp.Negate());
+                    else
+                        expressions.Add(exp);
+                }
+
+                s = s.ReplaceFirst(stringExpression, $"{r}e{e++}{r}");
+            }
+
+            // Find groups recursive
+            // https://regex101.com/r/xJaODO/2
+            var groups = new Dictionary<string[],bool>();
+            // var g = 0;
+            FindGroups();
+
+            void FindGroups()
+            {
+                foreach (Match match in Regex.Matches(s, "\\(+.*?\\)"))
+                {
+                    var group = match.Value.Replace("(", "").Replace(")", "");
+                    AddToGroup(group);
+                    s = s.ReplaceFirst($"({group})", $"{r}g{e++}{r}");
+                }
+                
+                if(s.Contains('(')) 
+                    FindGroups();
+                else
+                    AddToGroup(s); // most top group should be left
+
+                void AddToGroup(string ga)
+                {
+                    // TODO: Mixed groups!?
+                    if(ga.Contains(" OR "))
+                        groups.Add(ga.Split(" OR "), false);
+                    else
+                        groups.Add(ga.Split(" "), true);
+                }
+            }
+
+            // build expression
+            foreach (var group in groups)
+            {
+                var groupExpression = new List<Expression>();
+
+                foreach (var k in group.Key)
+                {
+                    var index = Regex.Match(k, @"\d+").Value;
+                    groupExpression.Add(expressions[Int32.Parse(index)]);
+
+                }
+
+                if (group.Value)
+                    expressions.Add(groupExpression[0].And(groupExpression.Skip(1).ToArray()));
+                else
+                    expressions.Add(groupExpression[0].Or(groupExpression.Skip(1).ToArray()));
+            }
+
+                return expressions.Last();
+        }
+        
+        var x3_s = x3_f.ToString().Substring(1, x3_f.ToString().Length - 2);
+        var x3_q = x3_s.Equals(t3);
+
+        var x3_x = ToExpression(t3);
+        var x3_t = x3_x.ToString().Substring(1, x3_x.ToString().Length - 2);
+        var x3_r = x3_t.Equals(t3);
+
+        // _controller.AddRule(x3_f, "MultiLevel Rule");
+
+        return;
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // test: https://regex101.com/r/gFgyi1/1
+
+        var t = "((key k1 k2) (#ht1 OR #\"ht 2\") @asdad OR from:\"sss dfdffs\" (lang:de OR lang:en) -is:retweet is:verified)";
+        // var t =  obj.Value;
+
+        var matches = MatchCollection(t);
+        // List<Expression> expressions = new List<Expression>();
+
+        foreach (Match match in matches)
+        {
+
+            // expressions.Add(GetExpression(match.Value));
+            SetExpression(match.Value);
+            // recursiv, wenn ( ) bzw. hier sind OR/AND wichtig
+            // if (match.Contains('('))
+            // {
+            //     var matchess = MatchCollection(match.ToString());
+            // }
+        }
+    }
+        
+    // const char r = '\t'; // replaceCharacter
+    const char r = '~'; // replaceCharacter
+
+    void SetExpression(string match)
+    {
+        // if(match[0] == '(')
+        //     match = match.Substring(1, match.Length - 1);
+        // if (matches.Count == 0 && !blu.Contains($"(") &&  (blu.Contains($"{r}AND{r}") || blu.Contains($"{r}OR{r}")))
+        // {
+        //     var splitable = blu.Replace($"{r}{r}", $" ").Replace($"{r}AND{r}", $"{r}").Replace($"{r}OR{r}", $"{r}").Replace($"{r}AND", $"{r}").Replace($"{r}OR", $"{r}").Replace($")", $"");
+        //     var keys = splitable.Split(r, StringSplitOptions.RemoveEmptyEntries);
+        //
+        //     return keys;
+        // }
+        // else if(!blu.Contains($"("))
+        // {
+        //     return matches.Select(x => x.Value.Replace($"{r}{r}", $" ").Replace($"{r}AND{r}", $"{r}").Replace($"{r}OR{r}", $"{r}").Replace($"{r}AND", $"{r}").Replace($"{r}OR", $"{r}").Replace($")", $"")).ToArray();
+        // }
+
+
+        var c = match.Replace($"{r}{r}", $" ").Replace($"{r}AND{r}", $"{r}").Replace($"{r}OR{r}", $"{r}").Replace($"{r}AND", $"{r}").Replace($"{r}OR", $"{r}").Replace($"(", $"").Replace($")", $"");
+        var keys = c.Split(r, StringSplitOptions.RemoveEmptyEntries);
+
+        if (c.Contains("from:"))
+        {
+
+        }
+        
+        // return Expression.Bio("ddd");
+    }
+
+    private static MatchCollection MatchCollection(string t)
+    {
+        var c = t.Substring(1, t.Length - 2); // cut ( )
+
+        // //Create a substitution pattern for the Replace method
+        // var replacePattern = "${label}: ${tag}";
+        //
+        // return Regex.Replace(str, pattern, replacePattern, RegexOptions.IgnoreCase);
+        var bli = Regex.Replace(c, "(\\\").*?(\")", (m) => m.ToString().Replace(" ", $"{r}{r}"));
+        var blo = bli.Replace(" OR ", $"{r}OR{r}");
+        var blu = blo.Replace(" ", $"{r}AND{r}");
+        //     // var exp = new Expression(String.Empty, obj.Value);
+
+        // Regex trennen, merkt nicht AND/OR -> ignorieren, da immer AND in tweet commander
+        // (\().*?\)|(-?(@|is|from)).*?((?=((\tAND\t)|(\tOR\t)))|(?=($)))
+        // var matches = Regex.Matches(blu, "(\\().*?\\)|(-?(@|#|\\$|is|from|lang)).*?((?=((\\tAND\\t)|(\\tOR\\t)))|(?=($)))"); // w/o AND & OR
+        var matches = Regex.Matches(blu, $"((\\().*?\\)|(-?(@|#|\\$|is|from|lang))).*?({r}AND{r}|{r}OR{r}|($))"); // inclusice AND & OR
+
+        return matches;
+    }
+
+    // class splitItem
+    // {
+    //
+    //     private IEnumerable<splitItem> splitItems;
+    //
+    //     public splitItem(string s)
+    //     {
+    //         splitItems = new[] { s };
+    //     }
+    // }
+    //
+    // private static IEnumerable<splitItem> GetGroupedItemsGroup(string input)
+    // {
+    //     var split = input.Split('(', 2);
+    //
+    //     if(split.Length == 1)
+    //         yield return new splitItem()split
+    //     if (group.HasSubgroups)
+    //         foreach (IGroup subGroup in group.Subgroups)
+    //         foreach (var childOfChild in GetGroupedItemsGroup<T>(subGroup))
+    //             yield return childOfChild;
+    //     else
+    //         foreach (var childOfChild in group.Items)
+    //             yield return (T)childOfChild;
+    // }
+
+    private void ResetExpressionAction()
+    {
+        Keyword = String.Empty;
+        Hashtag = String.Empty;
+        Mention = String.Empty;
+        Cashtag = String.Empty;
+        From = String.Empty;
+        Lang = String.Empty;
+        
+        KeywordAndOr = AndOrEnum.And;
+        HashtagAndOr = AndOrEnum.And;
+        MentionAndOr = AndOrEnum.And;
+        CashtagAndOr = AndOrEnum.And;
+
+        IsReply = null;
+        IsRetweet = null;
+        IsQuote = null;
+        IsVerified = null;
+        IsNotNullcast = null;
+        HasHashtags = null;
+        HasCashtags = null;
+        HasLinks = null;
+        HasMentions = null;
+        HasMedia = null;
+        HasImages = null;
+        HasVideos = null;
+        HasGeo = null;
     }
 
     private void OnConnectionChangedAction(object? sender, bool? e)
